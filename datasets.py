@@ -1,4 +1,4 @@
-# datasets.py
+import os
 import torch
 from torch.utils.data import Dataset
 from PIL import Image
@@ -21,9 +21,13 @@ class SkinDataset(Dataset):
         else: # If no fold is provided, use all data.
             self.df = df.copy()
 
+        # Image directory
+        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+        if img_dir is None:
+            self.img_dir = os.path.join(BASE_DIR, "data/images")
+        else:
+            self.img_dir = img_dir
 
-        # storing folder, train/val status and transforms for later use
-        self.img_dir = img_dir
         self.is_train = is_train
         self.transform = transform
 
