@@ -5,7 +5,7 @@ from PIL import Image
 from torchvision import transforms
 
 class SkinDataset(Dataset):
-    def __init__(self, df, img_dir="images", fold=None, is_train=True, transform=None):
+    def __init__(self, df, img_dir, fold=None, is_train=True, transform=None):
         """
         df: DataFrame with columns: image_id, dx, fold
         img_dir: folder containing all images
@@ -20,16 +20,11 @@ class SkinDataset(Dataset):
                 self.df = df[df["fold"] == fold].reset_index(drop=True)
         else: # If no fold is provided, use all data.
             self.df = df.copy()
-
-        # Image directory
-        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-        if img_dir is None:
-            self.img_dir = os.path.join(BASE_DIR, "data/images")
-        else:
-            self.img_dir = img_dir
-
+            
         self.is_train = is_train
         self.transform = transform
+
+        self.img_dir = img_dir
 
         # Map class names to integer labels ( 0-6)
         self.classes = sorted(self.df["dx"].unique())
