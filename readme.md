@@ -44,7 +44,9 @@ The system includes training, evaluation, and visualization of performance metri
 ## Installation
 ```bash
 # Clone repository
-git clone <repo-url>
+git https://github.com/Kamals56/SkinCancerDetection.git
+
+create a virtual environment
 
 # Install dependencies
 pip install -r requirements.txt
