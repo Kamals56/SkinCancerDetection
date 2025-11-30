@@ -1,16 +1,16 @@
-# trainer.py
 import torch
 import torch.nn as nn
 from tqdm.auto import tqdm
 from timeit import default_timer as timer
-from utils import compute_metrics, save_metrics_csv, save_best_model
+from utils import compute_metrics, save_metrics_csv, save_best_model, save_loss_curve, get_fold_dir
 
 def train_model(model, train_loader, val_loader, fold, device, args, class_weights=None):
 
     num_epochs = args.epochs
     lr = args.lr
     weight_decay = args.weight_decay
-    out_dir = args.out_dir
+    fold_dir = get_fold_dir(args.out_dir, fold)
+    patience = args.patience
 
     print(f"\nStarting training for Fold {fold}...\n")
 
@@ -23,9 +23,24 @@ def train_model(model, train_loader, val_loader, fold, device, args, class_weigh
 
     # Optimizer
     optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
+    
+    #LR scheduler
+    if args.scheduler == "steplr":
+        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.scheduler_step_size, gamma=args.scheduler_factor)
+    elif args.scheduler == "plateau":
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=args.scheduler_patience, factor=args.scheduler_factor, verbose=True)
+    elif args.scheduler == "cosine":
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=num_epochs)
+    else:
+        scheduler = None
 
     best_macro_f1 = 0.0
-
+    best_val_metric = 0.0
+    epochs_no_improve = 0
+    
+    train_losses = []
+    val_losses = []
+    
     for epoch in range(num_epochs):
         print(f"\nEpoch {epoch+1}/{num_epochs} - Fold {fold}")
         start_time = timer()
@@ -49,10 +64,35 @@ def train_model(model, train_loader, val_loader, fold, device, args, class_weigh
 
         # Validation
         epoch_val_loss, metrics = validate_model(model, val_loader, criterion, device,
-                                                 out_dir=out_dir, fold=fold, epoch=epoch+1)
+                                                 fold_dir=fold_dir, fold=fold, epoch=epoch+1)
         
+        # Step the scheduler based on validation loss
+        if scheduler:
+            if args.scheduler == "plateau":
+                scheduler.step(epoch_val_loss)
+            else:
+                scheduler.step()
+
+
         # Save Best Model
-        best_macro_f1, saved = save_best_model(model, metrics, best_macro_f1, save_dir=out_dir, fold=fold)
+        best_macro_f1, saved = save_best_model(model, metrics, best_macro_f1, save_dir=fold_dir, fold=fold)
+        
+        #Early stopping
+        current_val_metric = metrics['macro_f1']
+        if current_val_metric > best_val_metric:
+            best_val_metric = current_val_metric
+            epochs_no_improve = 0
+        else:
+            epochs_no_improve += 1
+
+        if epochs_no_improve >= patience:
+            print(f"\nEarly stopping triggered at epoch {epoch+1} for Fold {fold}.")
+            break
+
+        train_losses.append(epoch_train_loss)
+        val_losses.append(epoch_val_loss)
+
+        save_loss_curve(train_losses, val_losses, save_dir=fold_dir, fold=fold)
 
         epoch_time = timer() - start_time
         print(f"Train Loss: {epoch_train_loss:.4f} | Val Loss: {epoch_val_loss:.4f} | "
@@ -60,7 +100,7 @@ def train_model(model, train_loader, val_loader, fold, device, args, class_weigh
 
     print(f"\nTraining finished for Fold {fold}. Best Macro F1: {best_macro_f1:.4f}\n")
 
-def validate_model(model, val_loader, criterion, device, out_dir=None, fold=None, epoch=None):
+def validate_model(model, val_loader, criterion, device, fold_dir=None, fold=None, epoch=None):
  
     #Validate the model and compute metrics.
     model.eval()
@@ -85,11 +125,11 @@ def validate_model(model, val_loader, criterion, device, out_dir=None, fold=None
     metrics = compute_metrics(
         y_true, y_pred,
         class_names=class_names,
-        save_dir=out_dir,
+        save_dir= fold_dir,
         fold=fold,
         epoch=epoch
     )
-    if out_dir:
-        save_metrics_csv(metrics, class_names=class_names, save_dir=out_dir, fold=fold, epoch=epoch)
+    if fold_dir:
+        save_metrics_csv(metrics, class_names=class_names, save_dir=fold_dir, fold=fold, epoch=epoch)
 
     return epoch_val_loss, metrics
