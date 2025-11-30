@@ -2,14 +2,17 @@ import torch
 import torch.nn as nn
 import torchvision.models as models
 
-def get_model(backbone="resnet50", num_classes=7, pretrained=True):
+def get_model(backbone="resnet50", num_classes=7, pretrained=True, dropout=0.5, hidden_units=512):
     """
-    Returns a PyTorch ResNet model for skin lesion classification.
+    Returns a PyTorch ResNet model for skin lesion classification with optional
+    hidden layer and dropout.
 
     Args:
         backbone (str): 'resnet18', 'resnet34', or 'resnet50'
         num_classes (int): Number of output classes
         pretrained (bool): Use pretrained ImageNet weights
+        dropout (float): Dropout rate before final layer
+        hidden_units (int): Number of units in the optional hidden FC layer
 
     Returns:
         model (nn.Module): PyTorch model
@@ -25,8 +28,14 @@ def get_model(backbone="resnet50", num_classes=7, pretrained=True):
     else:
         raise ValueError(f"Unsupported backbone: {backbone}")
 
-    # Replaces the final fully connected layer
     in_features = model.fc.in_features
-    model.fc = nn.Linear(in_features, num_classes)
+
+    # Replace final layer with a hidden layer + dropout + output layer
+    model.fc = nn.Sequential(
+        nn.Linear(in_features, hidden_units),
+        nn.ReLU(),
+        nn.Dropout(dropout),
+        nn.Linear(hidden_units, num_classes)
+    )
 
     return model
