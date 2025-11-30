@@ -7,7 +7,19 @@ import matplotlib.pyplot as plt
 import os
 
 def check_device():
+    """Check if GPU is available, else use CPU."""
     return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+
+def get_fold_dir(base_dir, fold):
+    """
+    Create a folder for each fold inside the base directory.
+    Returns the path to that fold's directory.
+    """
+    fold_dir = os.path.join(base_dir, f"fold_{fold}")
+    os.makedirs(fold_dir, exist_ok=True)
+    return fold_dir
+
 
 def compute_metrics(y_true, y_pred, class_names=None, save_dir=None, fold=None, epoch=None):
     """
@@ -16,10 +28,10 @@ def compute_metrics(y_true, y_pred, class_names=None, save_dir=None, fold=None, 
     Args:
         y_true (list or np.array): True labels
         y_pred (list or np.array): Predicted labels
-        class_names (list): List of class names in order
-        save_dir (str): Directory to save confusion matrix image (optional)
-        fold (int): Fold number (optional, used for file naming)
-        epoch (int): Epoch number (optional, used for file naming)
+        class_names (list): List of class names
+        save_dir (str): Directory to save confusion matrix image
+        fold (int): Fold number
+        epoch (int): Epoch number
 
     Returns:
         metrics_dict (dict): Dictionary containing all computed metrics
@@ -60,8 +72,8 @@ def compute_metrics(y_true, y_pred, class_names=None, save_dir=None, fold=None, 
         disp.plot(cmap="Blues", values_format="d")
         plt.title(f"Fold {fold} Epoch {epoch} Confusion Matrix" if fold is not None and epoch is not None else "Confusion Matrix")
         plt.tight_layout()
-        save_path = os.path.join(save_dir, f"confusion_matrix_fold{fold}_epoch{epoch}.png" if fold is not None and epoch is not None else "confusion_matrix.png")
-        plt.savefig(save_path)
+        file_name = f"confusion_matrix_fold{fold}_epoch{epoch}.png" if fold is not None and epoch is not None else "confusion_matrix.png"
+        plt.savefig(os.path.join(save_dir, file_name))
         plt.close()
 
     return metrics_dict
@@ -80,7 +92,6 @@ def save_metrics_csv(metrics_dict, class_names, save_dir, fold=None, epoch=None)
     """
     os.makedirs(save_dir, exist_ok=True)
     
-    # Prepare dataframe
     df = pd.DataFrame({
         "class": class_names,
         "f1_score": metrics_dict["per_class_f1"],
@@ -88,7 +99,6 @@ def save_metrics_csv(metrics_dict, class_names, save_dir, fold=None, epoch=None)
         "recall": metrics_dict["per_class_recall"]
     })
 
-    # Add macro metrics as a separate row
     macro_row = pd.DataFrame([{
         "class": "macro_avg",
         "f1_score": metrics_dict["macro_f1"],
@@ -97,7 +107,6 @@ def save_metrics_csv(metrics_dict, class_names, save_dir, fold=None, epoch=None)
     }])
     df = pd.concat([df, macro_row], ignore_index=True)
 
-    # Save CSV
     file_name = f"metrics_fold{fold}_epoch{epoch}.csv" if fold is not None and epoch is not None else "metrics.csv"
     df.to_csv(os.path.join(save_dir, file_name), index=False)
 
@@ -129,3 +138,26 @@ def save_best_model(model, metrics_dict, best_macro_f1, save_dir, fold=None):
         saved = True
 
     return best_macro_f1, saved
+
+
+def save_loss_curve(train_losses, val_losses, save_dir, fold=None):
+    """
+    Save training and validation loss curves.
+
+    Args:
+        train_losses (list): Training loss per epoch
+        val_losses (list): Validation loss per epoch
+        save_dir (str): Directory to save curve
+        fold (int, optional): Fold number
+    """
+    os.makedirs(save_dir, exist_ok=True)
+    plt.figure()
+    plt.plot(train_losses, label="Train Loss")
+    plt.plot(val_losses, label="Val Loss")
+    plt.xlabel("Epoch")
+    plt.ylabel("Loss")
+    plt.title(f"Loss Curve Fold {fold}" if fold is not None else "Loss Curve")
+    plt.legend()
+    file_name = f"loss_curve_fold{fold}.png" if fold is not None else "loss_curve.png"
+    plt.savefig(os.path.join(save_dir, file_name))
+    plt.close()
