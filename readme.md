@@ -82,8 +82,6 @@ python main.py \
 
 ```
     
-
-
 Training uses **cross-validation**, saving the **best model per fold** along with metrics and loss curves.
 
 ---
@@ -119,7 +117,8 @@ Computes metrics and confusion matrix on unseen data.
 
 ## Acknowledgements
 
-* Dataset: HAM10000: Tschandl et al., 2018
+* Dataset: HAM10000: Tschandl et al., 2018 
+  accessed through https://www.kaggle.com/datasets/kmader/skin-cancer-mnist-ham10000
 
 * PyTorch: Deep learning framework
 
@@ -128,3 +127,11 @@ Computes metrics and confusion matrix on unseen data.
 ## License
 
 This project is licensed under the MIT License.
+
+## Dataset
+
+This project uses the Skin Cancer MNIST: HAM10000 dataset.  
+
+**Dataset License:** [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/)  
+
+Please refer to the official license page for more details: https://creativecommons.org/licenses/by-nc-sa/4.0/
