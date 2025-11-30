@@ -10,7 +10,7 @@ from args import get_args
 from datasets import SkinDataset
 from models import get_model
 from trainer import train_model
-from utils import check_device 
+from utils import check_device, get_fold_dir
 
 
 device = check_device()
@@ -25,6 +25,9 @@ def main():
 
     for fold in range(args.n_splits):
         print(f"Training fold: {fold}")
+
+        # Create fold-specific folder to save metrices of each fold
+        fold_dir = get_fold_dir(args.out_dir, fold)
 
         # Preparing the datasets
         train_dataset = SkinDataset(df, img_dir=args.data_dir, fold=fold, is_train=True)
