@@ -1,7 +1,7 @@
 Skin Lesion Classification
 
 ## Project Overview
-This project implements a **deep learning-based skin lesion classification system** using the **HAM10000 dataset**. The model leverages **pretrained ResNet architectures** with **data augmentation** and **cross-validation** to classify 7 types of skin lesions.  
+This project implements a **deep learning-based skin lesion classification system** using the **HAM10000 dataset**. The model leverages **pretrained ResNet architectures** with **data augmentation** and **cross-validation** to classify 7 types of malignant skin lesions.  
 
 The system includes training, evaluation, and visualization of performance metrics, including confusion matrices, loss curves, and macro F1 scores.  
 
