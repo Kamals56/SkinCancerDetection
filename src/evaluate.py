@@ -70,7 +70,7 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # LOAD TEST CSV
-    test_csv = os.path.join(args.data_dir, "test.csv")  # YOU MUST PROVIDE THIS
+    test_csv = os.path.join(args.data_dir, "test.csv") 
     df = pd.read_csv(test_csv)
 
     class_names = sorted(df["label"].unique())
@@ -86,7 +86,7 @@ def main():
 
     # Load model
     model = get_model(backbone=args.backbone, num_classes=len(class_names))
-    model_path = os.path.join(args.out_dir, "best_model.pth")  # YOU MUST SAVE THIS DURING TRAINING
+    model_path = os.path.join(args.out_dir, "best_model.pth")  
     model.load_state_dict(torch.load(model_path, map_location=device))
     model.to(device)
 
